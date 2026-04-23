@@ -77,6 +77,16 @@ web_modules/
 # Next.js build output
 .next
 out
+next-env.d.ts
+
+# Vercel
+.vercel
+
+# 인증서 / 시크릿
+*.pem
+
+# OS 생성 파일
+.DS_Store
 
 # Nuxt.js build / generate output
 .nuxt
