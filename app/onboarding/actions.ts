@@ -24,7 +24,9 @@ export async function completeOnboarding() {
   });
 
   if (error) {
-    throw new Error(`온보딩 상태 저장 실패: ${error.message}`);
+    // 내부 에러 메시지는 로그에만 남기고 클라이언트에는 일반화된 코드만 전달
+    console.error('[onboarding] updateUser 실패', error);
+    redirect('/onboarding?error=save_failed');
   }
 
   redirect('/dashboard');

@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
+import { createClient } from '@/lib/supabase/server';
 
 type SearchParams = Promise<{
   redirect?: string;
@@ -11,6 +13,15 @@ export default async function LoginPage({
 }: {
   searchParams: SearchParams;
 }) {
+  // 이미 로그인된 유저의 방어적 가드 — proxy 가 처리하지만 직접 접근 대비
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    redirect(user.user_metadata?.onboarded ? '/dashboard' : '/onboarding');
+  }
+
   const params = await searchParams;
   const redirectPath = params.redirect;
   const errorCode = params.error;

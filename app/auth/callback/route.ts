@@ -16,7 +16,8 @@ function safeNext(value: string | null): string | null {
   if (!decoded.startsWith('/')) return null;
   if (decoded.startsWith('//')) return null;
   if (decoded.startsWith('/\\')) return null;
-  if (/\s/.test(decoded)) return null;
+  // 공백·탭·개행 + C0 제어문자 전 범위 차단
+  if (/[\s\x00-\x1F\x7F]/.test(decoded)) return null;
   return decoded;
 }
 

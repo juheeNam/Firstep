@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { signOut } from '@/app/login/actions';
 import { createClient } from '@/lib/supabase/server';
+import { SubmitButton } from '@/components/SubmitButton';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -32,12 +33,12 @@ export default async function DashboardPage() {
             </h1>
           </div>
           <form action={signOut}>
-            <button
-              type="submit"
+            <SubmitButton
+              pendingLabel="로그아웃 중..."
               className="rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
             >
               로그아웃
-            </button>
+            </SubmitButton>
           </form>
         </header>
 
