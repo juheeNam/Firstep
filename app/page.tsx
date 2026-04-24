@@ -1,3 +1,5 @@
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
+
 export default function Home() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center bg-zinc-50 px-6 py-20 dark:bg-black">
@@ -17,16 +19,7 @@ export default function Home() {
           로드맵으로 만들어주고, 완료까지 옆에서 가이드합니다.
         </p>
 
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          className="mt-4 flex h-12 items-center justify-center gap-2 rounded-full bg-zinc-900 px-6 text-sm font-medium text-zinc-50 opacity-60 dark:bg-zinc-50 dark:text-zinc-900"
-          title="곧 연결될 예정입니다"
-        >
-          구글로 시작하기
-          <span className="text-xs font-normal opacity-70">(준비 중)</span>
-        </button>
+        <GoogleSignInButton />
 
         <p className="text-xs text-zinc-500 dark:text-zinc-500">
           MVP 개발 중 · 8주 목표
