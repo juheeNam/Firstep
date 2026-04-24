@@ -52,10 +52,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 인증됨 + /login 접근 → /dashboard 로 리다이렉트
+  // 인증됨 + /login 접근 → 온보딩 여부에 따라 분기 (PRD §4.1)
   if (user && pathname === '/login') {
     const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
+    url.pathname = user.user_metadata?.onboarded ? '/dashboard' : '/onboarding';
     url.search = '';
     return NextResponse.redirect(url);
   }
