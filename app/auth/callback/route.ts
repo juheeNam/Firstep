@@ -51,16 +51,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 로그인 후 분기: 명시적 redirect 가 있으면 그곳으로, 없으면 온보딩 여부로 분기
-  if (nextParam) {
-    return NextResponse.redirect(new URL(nextParam, origin));
-  }
-
+  // 온보딩 미완료 신규 유저는 next 파라미터 무시하고 /onboarding 강제 (PRD §4.1)
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   const onboarded = Boolean(user?.user_metadata?.onboarded);
-  const destination = onboarded ? '/dashboard' : '/onboarding';
+
+  if (!onboarded) {
+    return NextResponse.redirect(new URL('/onboarding', origin));
+  }
+
+  // 온보딩 완료 유저: next 우선, 없으면 대시보드
+  const destination = nextParam ?? '/dashboard';
   return NextResponse.redirect(new URL(destination, origin));
 }
