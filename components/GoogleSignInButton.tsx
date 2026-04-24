@@ -1,34 +1,27 @@
 // 구글 로그인 트리거 버튼 (서버 액션 기반 form)
 
 import { signInWithGoogle } from '@/app/login/actions';
+import { SubmitButton } from '@/components/SubmitButton';
 
 type Props = {
   // 로그인 후 복귀할 경로 (/dashboard 등). 없으면 OAuth 콜백 기본 분기
   redirectPath?: string;
   label?: string;
-  className?: string;
 };
 
 export function GoogleSignInButton({
   redirectPath,
   label = '구글로 시작하기',
-  className,
 }: Props) {
   return (
     <form action={signInWithGoogle}>
       {redirectPath ? (
         <input type="hidden" name="redirect" value={redirectPath} />
       ) : null}
-      <button
-        type="submit"
-        className={
-          className ??
-          'flex h-12 items-center justify-center gap-2 rounded-full bg-zinc-900 px-6 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200'
-        }
-      >
+      <SubmitButton>
         <GoogleIcon />
         {label}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

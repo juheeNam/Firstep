@@ -15,8 +15,12 @@ export async function completeOnboarding() {
     redirect('/login');
   }
 
+  // 기존 user_metadata(구글 프로필: full_name, avatar_url 등)를 명시적으로 보존
   const { error } = await supabase.auth.updateUser({
-    data: { onboarded: true },
+    data: {
+      ...user.user_metadata,
+      onboarded: true,
+    },
   });
 
   if (error) {

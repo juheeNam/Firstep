@@ -3,11 +3,21 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+// 허용된 내부 리다이렉트 경로만 통과 — open-redirect 방어
+// URL 인코딩 우회 및 공백/제어 문자 차단
 function safeNext(value: string | null): string | null {
   if (!value) return null;
-  if (!value.startsWith('/')) return null;
-  if (value.startsWith('//')) return null;
-  return value;
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    return null;
+  }
+  if (!decoded.startsWith('/')) return null;
+  if (decoded.startsWith('//')) return null;
+  if (decoded.startsWith('/\\')) return null;
+  if (/\s/.test(decoded)) return null;
+  return decoded;
 }
 
 export async function GET(request: NextRequest) {

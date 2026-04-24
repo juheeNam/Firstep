@@ -60,6 +60,10 @@ function mapErrorMessage(code: string): string {
       return '구글 로그인 창에서 취소되었습니다. 다시 시도해 주세요.';
     case 'exchange_failed':
       return '세션 발급에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+    case 'oauth_init_failed':
+      return '로그인 시작에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+    case 'missing_origin':
+      return '요청 경로를 확인할 수 없습니다. 브라우저에서 다시 시도해 주세요.';
     default:
       return '알 수 없는 오류가 발생했습니다. 다시 시도해 주세요.';
   }

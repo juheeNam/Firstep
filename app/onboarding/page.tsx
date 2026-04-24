@@ -13,6 +13,11 @@ export default async function OnboardingPage() {
     redirect('/login');
   }
 
+  // 이미 온보딩을 마친 유저의 재진입 차단 — URL 직접 입력 또는 next 파라미터 우회 방어
+  if (user.user_metadata?.onboarded) {
+    redirect('/dashboard');
+  }
+
   return (
     <main className="flex flex-1 flex-col items-center bg-zinc-50 px-6 py-20 dark:bg-black">
       <div className="flex w-full max-w-xl flex-col gap-8">

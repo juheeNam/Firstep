@@ -6,12 +6,21 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
-// 허용된 내부 리다이렉트 경로만 통과시키기 (open-redirect 방어)
+// 허용된 내부 리다이렉트 경로만 통과 — open-redirect 방어
+// URL 인코딩 우회 및 공백/제어 문자 차단
 function sanitizeRedirect(value: string | null): string | null {
   if (!value) return null;
-  if (!value.startsWith('/')) return null;
-  if (value.startsWith('//')) return null;
-  return value;
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    return null;
+  }
+  if (!decoded.startsWith('/')) return null;
+  if (decoded.startsWith('//')) return null;
+  if (decoded.startsWith('/\\')) return null;
+  if (/\s/.test(decoded)) return null;
+  return decoded;
 }
 
 export async function signInWithGoogle(formData: FormData) {
@@ -20,7 +29,9 @@ export async function signInWithGoogle(formData: FormData) {
 
   const origin = headersList.get('origin');
   if (!origin) {
-    throw new Error('Origin 헤더를 확인할 수 없습니다.');
+    // Next.js Server Action 은 CSRF 방어로 Origin 을 강제하지만,
+    // 예외적으로 누락된 경우 사용자에게 로그인 페이지 에러로 전달
+    redirect('/login?error=missing_origin');
   }
 
   const redirectParam = sanitizeRedirect(
@@ -40,12 +51,8 @@ export async function signInWithGoogle(formData: FormData) {
     },
   });
 
-  if (error) {
-    throw new Error(`구글 로그인 초기화 실패: ${error.message}`);
-  }
-
-  if (!data.url) {
-    throw new Error('OAuth 리다이렉트 URL 이 발급되지 않았습니다.');
+  if (error || !data?.url) {
+    redirect('/login?error=oauth_init_failed');
   }
 
   redirect(data.url);
