@@ -47,3 +47,19 @@ export type IntentDataLevel2 = {
 export type ProjectSummaryResult =
   | { title: string; ideaSummary: string }
   | { error: string };
+
+// 레벨 3 intent_data JSONB 구조 (자유 텍스트 + AI 후속 Q&A)
+export type FollowUpQA = {
+  question: string;
+  answer: string;
+};
+
+export type IntentDataLevel3 = {
+  ideaText: string;       // 상세 아이디어 자유 서술
+  followUpQAs: FollowUpQA[];
+};
+
+// generateFollowUpQuestions 반환 타입
+export type FollowUpQuestionsResult =
+  | { questions: string[] }
+  | { error: string };
