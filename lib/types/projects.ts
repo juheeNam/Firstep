@@ -33,3 +33,17 @@ export type LevelMeta = {
   description: string;
   href: string;
 };
+
+// 레벨 2 intent_data JSONB 구조 (5지선다 + 자유 텍스트)
+export type IntentDataLevel2 = {
+  q1Text: string;           // 서비스 한 줄 설명
+  q2Form: string;           // 프로젝트 형태
+  q3Auth: string;           // 인증/개인화 수준
+  q4Integrations: string[]; // 외부 통합 (복수 선택)
+  q5Audience: string;       // 공개 범위
+};
+
+// generateProjectSummary 반환 타입
+export type ProjectSummaryResult =
+  | { title: string; ideaSummary: string }
+  | { error: string };
