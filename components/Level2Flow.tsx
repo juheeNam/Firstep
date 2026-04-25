@@ -40,7 +40,7 @@ const STEP_QUESTIONS = [
   '만들고 싶은 서비스를 한 줄로 설명해주세요',
   '어떤 형태의 프로젝트인가요?',
   '사용자 인증/개인화는 어디까지 필요해요?',
-  '어떤 외부 통합이 필요해요?',
+  '어떤 외부 통합이 필요해요? (해당되는 것 모두 선택)',
   '누구한테 보여줄 계획인가요?',
 ];
 
@@ -202,21 +202,31 @@ export function Level2Flow({ errorCode }: { errorCode?: string }) {
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            onClick={handleRegenerate}
+            onClick={() => setStep(4)}
             disabled={isPending}
-            className="rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-600 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-900"
+            className="text-sm text-zinc-500 transition hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 dark:text-zinc-400 dark:hover:text-zinc-200"
           >
-            {isPending ? '생성 중...' : '다시 생성'}
+            ← 답변 수정하기
           </button>
-          <button
-            type="button"
-            onClick={handleCreate}
-            disabled={isPending || !canProceed()}
-            aria-busy={isPending}
-            className="rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            {isPending ? '저장 중...' : '이 내용으로 로드맵 만들기'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleRegenerate}
+              disabled={isPending}
+              className="rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-600 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-900"
+            >
+              {isPending ? '생성 중...' : '다시 생성'}
+            </button>
+            <button
+              type="button"
+              onClick={handleCreate}
+              disabled={isPending || !canProceed()}
+              aria-busy={isPending}
+              className="rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              {isPending ? '저장 중...' : '이 내용으로 로드맵 만들기'}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -368,6 +378,7 @@ function OptionGrid({ options, selected, onToggle, multi = false }: OptionGridPr
             key={opt}
             type="button"
             onClick={() => onToggle(opt)}
+            aria-pressed={isSelected}
             className={
               'rounded-xl border px-4 py-3 text-left text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 dark:focus-visible:ring-zinc-50 ' +
               (isSelected

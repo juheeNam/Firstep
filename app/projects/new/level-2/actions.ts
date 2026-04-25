@@ -61,7 +61,13 @@ export async function generateProjectSummary(
       return { error: '응답 형식 오류' };
     }
 
-    return { title: parsed.title, ideaSummary: parsed.idea_summary };
+    const title = parsed.title.trim().slice(0, 50);
+    const ideaSummary = parsed.idea_summary.trim();
+    if (title.length === 0 || ideaSummary.length < 10) {
+      return { error: '응답 형식 오류' };
+    }
+
+    return { title, ideaSummary };
   } catch (err) {
     console.error('[generateProjectSummary] Claude 호출 실패', err);
     return { error: 'AI 요약 생성에 실패했어요. 다시 시도해주세요.' };
