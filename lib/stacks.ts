@@ -1,13 +1,13 @@
 // 스택 온보딩에서 사용하는 카테고리·기술 목록 및 상태 순환 정의
 
-import type { CategoryMeta, StackCategory, StackSelectionState } from '@/lib/types/stacks';
+import type { CategoryMeta, StackCategory, StackSelectionState, StackStatus } from '@/lib/types/stacks';
 
 export const CATEGORY_META: CategoryMeta[] = [
   { id: 'frontend', label: '프론트엔드' },
   { id: 'backend',  label: '백엔드'    },
   { id: 'db',       label: 'DB'        },
   { id: 'infra',    label: '인프라'    },
-  { id: 'security', label: '보안'      },
+  { id: 'security', label: '보안/네트워크' },
 ];
 
 export const STACKS: Record<StackCategory, string[]> = {
@@ -41,7 +41,7 @@ export const STATUS_CYCLE: StackSelectionState[] = [
   'not_interested',
 ];
 
-export const STATUS_LABEL: Record<string, string> = {
+export const STATUS_LABEL: Record<StackStatus, string> = {
   used:           '써봤어요',
   want:           '써보고싶어요',
   not_interested: '관심없어요',
