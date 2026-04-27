@@ -66,6 +66,7 @@ ${trimmedIdea}
     }
 
     const questions = (parsed.questions as string[]).slice(0, 4);
+    if (questions.length < 2) return { error: '응답 형식 오류' };
     return { questions };
   } catch (err) {
     console.error('[generateFollowUpQuestions] Claude 호출 실패', err);
