@@ -46,7 +46,7 @@ export async function generateProjectSummary(
 
   try {
     const message = await client.messages.create({
-      model: MODELS.haiku,
+      model: MODELS.sonnet,
       max_tokens: 512,
       messages: [{ role: 'user', content: prompt }],
     });
