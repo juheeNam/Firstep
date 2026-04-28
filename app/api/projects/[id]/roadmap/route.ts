@@ -181,6 +181,10 @@ export async function POST(
         }
 
         // 8) DB 저장 — blocks 먼저, todos 뒤. 실패 시 이 요청에서 생성한 blocks만 롤백.
+        // 이번 요청이 INSERT 한 blocks 의 id 보관 — abort/실패 시 cleanup 대상.
+        // 클라이언트 abort 후 INSERT 가 commit 되어버리는 race 방지를 위해 각 단계 직전·직후에 abort 체크.
+        if (abortSignal.aborted) return;
+
         const blocksPayload = draft.blocks.map((b, i) => ({
           project_id: projectId,
           name:       b.name,
@@ -214,6 +218,24 @@ export async function POST(
         // 이슈 4: RETURNING 순서는 INSERT 입력 순이지만 seq 정렬을 명시적으로 보장
         insertedBlocks.sort((a, b) => a.seq - b.seq);
 
+        // blocks INSERT 가 commit 된 직후 abort 가 도착했다면 부분 결과를 즉시 정리한다.
+        // (PRD §4.4.2 "취소 시 부분 결과 저장 안 함")
+        const insertedBlockIds = insertedBlocks.map(b => b.id);
+        const cleanupInsertedBlocks = async () => {
+          const { error: delErr } = await supabase
+            .from('blocks')
+            .delete()
+            .in('id', insertedBlockIds);
+          if (delErr) {
+            console.error('[roadmap] cleanup blocks 실패 — 고아 blocks 가능', delErr);
+          }
+        };
+
+        if (abortSignal.aborted) {
+          await cleanupInsertedBlocks();
+          return;
+        }
+
         const todosPayload = insertedBlocks.flatMap(block => {
           const draftBlock = draft!.blocks[block.seq];
           if (!draftBlock) return [];
@@ -230,21 +252,28 @@ export async function POST(
           if (todosError) {
             console.error('[roadmap] todos insert 실패', todosError);
             // 이슈 3: 이번 요청에서 생성한 blocks id만 롤백 (project 전체 blocks 삭제 금지)
-            await supabase
-              .from('blocks')
-              .delete()
-              .in('id', insertedBlocks.map(b => b.id));
+            await cleanupInsertedBlocks();
             send({ type: 'error', message: '저장 중 오류가 발생했어요. 다시 시도해주세요.' });
             controller.close();
             return;
           }
         }
 
+        // todos INSERT 직후 abort 가 도착했다면 blocks + todos(CASCADE) 모두 정리.
+        if (abortSignal.aborted) {
+          await cleanupInsertedBlocks();
+          return;
+        }
+
         // 이슈 2: size_option은 blocks/todos 저장 성공 직후에만 기록
-        await supabase
+        const { error: sizeError } = await supabase
           .from('projects')
           .update({ size_option: size })
           .eq('id', projectId);
+        if (sizeError) {
+          // size_option 만 NULL 로 남는 케이스는 데이터 무결성에 큰 영향은 없으나 추적 가능하도록 로깅
+          console.error('[roadmap] size_option update 실패', sizeError);
+        }
 
         send({ type: 'done', projectId });
         controller.close();
