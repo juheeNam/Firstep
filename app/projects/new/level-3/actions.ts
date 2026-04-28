@@ -144,11 +144,35 @@ export async function createProject(data: {
     redirect('/projects/new/level-3?error=save_failed');
   }
 
+  const trimmedTitle = data.title.trim();
+
+  // 이슈 5: 뒤로가기·연타로 동일 입력이 두 번 제출되어 새 프로젝트가 중복 생성되는 것 방지.
+  //         조건을 좁혀 (1) title 비어있지 않음 (2) size_option NULL(아직 로드맵 미생성)
+  //         (3) 최근 5분 내 같은 user+title+entry_level 3 active 프로젝트만 매칭.
+  if (trimmedTitle.length > 0) {
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: recent } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('user_id',     user.id)
+      .eq('title',       trimmedTitle)
+      .eq('entry_level', 3)
+      .is('size_option', null)
+      .is('deleted_at',  null)
+      .gt('created_at',  fiveMinAgo)
+      .limit(1)
+      .maybeSingle();
+
+    if (recent?.id) {
+      redirect(`/projects/${recent.id}/roadmap/new`);
+    }
+  }
+
   const { data: project, error } = await supabase
     .from('projects')
     .insert({
       user_id:      user.id,
-      title:        data.title.trim(),
+      title:        trimmedTitle,
       idea_summary: data.ideaSummary.trim(),
       entry_level:  3,
       intent_data:  data.intentData,
@@ -162,5 +186,5 @@ export async function createProject(data: {
     redirect('/projects/new/level-3?error=save_failed');
   }
 
-  redirect(`/projects/${project.id}`);
+  redirect(`/projects/${project.id}/roadmap/new`);
 }
