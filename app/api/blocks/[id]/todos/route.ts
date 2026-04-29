@@ -4,6 +4,17 @@
 
 import { createClient } from '@/lib/supabase/server';
 
+// Supabase 조인 응답 타입 — 중첩 조인은 배열로 반환됨
+type BlockOwnerRow = {
+  id: string;
+  project_id: string;
+  projects: { user_id: string }[];
+};
+
+function extractUserId(row: BlockOwnerRow | null): string | undefined {
+  return row?.projects?.[0]?.user_id;
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -36,20 +47,18 @@ export async function POST(
     .eq('id', blockId)
     .single();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const projectUserId = (block?.projects as any)?.user_id as string | undefined;
-  if (!block || projectUserId !== user.id) {
+  if (!block || extractUserId(block as BlockOwnerRow) !== user.id) {
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 
-  // 현재 블록의 최대 seq 조회
+  // 현재 블록의 최대 seq 조회 (빈 블록이면 maybeSingle()로 null 처리)
   const { data: maxRow } = await supabase
     .from('todos')
     .select('seq')
     .eq('block_id', blockId)
     .order('seq', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   const nextSeq = (maxRow?.seq ?? 0) + 1;
 
@@ -102,9 +111,7 @@ export async function PATCH(
     .eq('id', blockId)
     .single();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const projectUserId = (block?.projects as any)?.user_id as string | undefined;
-  if (!block || projectUserId !== user.id) {
+  if (!block || extractUserId(block as BlockOwnerRow) !== user.id) {
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 

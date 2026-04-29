@@ -4,6 +4,20 @@
 
 import { createClient } from '@/lib/supabase/server';
 
+// Supabase 조인 응답 타입 — 중첩 조인은 배열로 반환됨
+type TodoOwnerRow = {
+  id: string;
+  block_id: string;
+  blocks: {
+    project_id: string;
+    projects: { user_id: string }[];
+  }[];
+};
+
+function extractUserId(row: TodoOwnerRow | null): string | undefined {
+  return row?.blocks?.[0]?.projects?.[0]?.user_id;
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -32,10 +46,7 @@ export async function PATCH(
     .eq('id', id)
     .single();
 
-  const projectUserId =
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (todo?.blocks as any)?.projects?.user_id as string | undefined;
-  if (!todo || projectUserId !== user.id) {
+  if (!todo || extractUserId(todo as TodoOwnerRow) !== user.id) {
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 
@@ -81,10 +92,7 @@ export async function DELETE(
     .eq('id', id)
     .single();
 
-  const projectUserId =
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (todo?.blocks as any)?.projects?.user_id as string | undefined;
-  if (!todo || projectUserId !== user.id) {
+  if (!todo || extractUserId(todo as TodoOwnerRow) !== user.id) {
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 
