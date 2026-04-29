@@ -3,7 +3,20 @@ import { redirect } from 'next/navigation';
 import { signOut } from '@/app/login/actions';
 import { createClient } from '@/lib/supabase/server';
 import { SubmitButton } from '@/components/SubmitButton';
-import type { ProjectCard } from '@/lib/types/projects';
+import { ProjectList } from '@/components/ProjectList';
+import type { ProjectCardData } from '@/components/ProjectCard';
+import type { ProjectStatus } from '@/lib/types/projects';
+
+// Supabase 조인 응답 타입
+type ProjectRow = {
+  id: string;
+  title: string;
+  status: ProjectStatus;
+  updated_at: string;
+  blocks: {
+    todos: { is_done: boolean }[];
+  }[];
+};
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -21,16 +34,26 @@ export default async function DashboardPage() {
     user.email ??
     '사용자';
 
-  // 본인 프로젝트 목록 조회 (소프트 딜리트 제외, 최신순)
+  // 프로젝트 + 투두 진행률 조회 (소프트 딜리트 제외, 최신순)
   const { data: projects } = await supabase
     .from('projects')
-    .select('id, title, status, entry_level, updated_at')
+    .select('id, title, status, updated_at, blocks(todos(is_done))')
     .eq('user_id', user.id)
     .is('deleted_at', null)
     .order('updated_at', { ascending: false })
     .limit(20);
 
-  const projectList = (projects ?? []) as ProjectCard[];
+  const projectList: ProjectCardData[] = ((projects ?? []) as ProjectRow[]).map(p => {
+    const allTodos = p.blocks.flatMap(b => b.todos);
+    return {
+      id: p.id,
+      title: p.title,
+      status: p.status,
+      updated_at: p.updated_at,
+      totalTodos: allTodos.length,
+      doneTodos: allTodos.filter(t => t.is_done).length,
+    };
+  });
 
   return (
     <main className="flex flex-1 flex-col items-center bg-zinc-50 px-6 py-20 dark:bg-black">
@@ -55,7 +78,7 @@ export default async function DashboardPage() {
         </header>
 
         {projectList.length === 0 ? (
-          // 빈 상태
+          // 빈 상태 (§4.8)
           <section className="flex flex-col items-center gap-6 rounded-2xl border border-dashed border-zinc-300 bg-white p-12 text-center dark:border-zinc-700 dark:bg-zinc-950">
             <div className="text-4xl">🌱</div>
             <div className="flex flex-col gap-2">
@@ -74,7 +97,7 @@ export default async function DashboardPage() {
             </Link>
           </section>
         ) : (
-          // 프로젝트 목록
+          // 프로젝트 목록 (§4.7.1)
           <section className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -87,10 +110,7 @@ export default async function DashboardPage() {
                 + 새 프로젝트
               </Link>
             </div>
-            {/* 추후 ProjectCard 컴포넌트로 교체 예정 */}
-            <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
-              프로젝트 카드 뷰는 준비 중입니다.
-            </div>
+            <ProjectList initialProjects={projectList} />
           </section>
         )}
       </div>
