@@ -20,11 +20,13 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { TodoItem } from '@/components/TodoItem';
 import type { BlockWithTodos, Block, Todo } from '@/lib/types/roadmap';
+import type { ProjectStatus } from '@/lib/types/projects';
 
 type Props = {
   projectId: string;
   initialTitle: string;
   initialBlocks: BlockWithTodos[];
+  initialStatus: ProjectStatus;
 };
 
 type DeleteTarget =
@@ -72,9 +74,10 @@ function SortableBlock({
   );
 }
 
-export function RoadmapView({ projectId, initialTitle, initialBlocks }: Props) {
+export function RoadmapView({ projectId, initialTitle, initialBlocks, initialStatus }: Props) {
   const [blocks, setBlocks] = useState<BlockWithTodos[]>(initialBlocks);
   const [title, setTitle] = useState(initialTitle);
+  const [status, setStatus] = useState<ProjectStatus>(initialStatus);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(initialTitle);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -255,6 +258,16 @@ export function RoadmapView({ projectId, initialTitle, initialBlocks }: Props) {
   const totalTodos = blocks.reduce((a, b) => a + b.todos.length, 0);
   const doneTodos  = blocks.reduce((a, b) => a + b.todos.filter(t => t.is_done).length, 0);
   const progressPct = totalTodos === 0 ? 0 : Math.round((doneTodos / totalTodos) * 100);
+  const allDone = totalTodos > 0 && doneTodos === totalTodos;
+
+  async function handleStatusChange(next: ProjectStatus) {
+    setStatus(next);
+    await fetch(`/api/projects/${projectId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: next }),
+    });
+  }
 
   return (
     <>
@@ -415,6 +428,48 @@ export function RoadmapView({ projectId, initialTitle, initialBlocks }: Props) {
           </button>
         )}
       </section>
+
+      {/* 완료 CTA */}
+      {allDone && status === 'active' && (
+        <section className="flex flex-col items-center gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-8 text-center dark:border-emerald-900 dark:bg-emerald-950/30">
+          <div className="text-3xl">🎉</div>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+              모든 투두를 완료했어요!
+            </h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              프로젝트를 완료 상태로 전환할 수 있어요.
+            </p>
+          </div>
+          <button
+            onClick={() => void handleStatusChange('completed')}
+            className="rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+          >
+            프로젝트 완료하기
+          </button>
+        </section>
+      )}
+
+      {/* 완료된 프로젝트 배너 */}
+      {status === 'completed' && (
+        <section className="flex flex-col items-center gap-4 rounded-2xl border border-zinc-200 bg-zinc-100 p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="text-3xl">✅</div>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+              완료된 프로젝트예요
+            </h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              계속 작업하고 싶다면 다시 진행 상태로 전환할 수 있어요.
+            </p>
+          </div>
+          <button
+            onClick={() => void handleStatusChange('active')}
+            className="rounded-full border border-zinc-300 px-6 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            다시 진행하기
+          </button>
+        </section>
+      )}
 
       {/* 삭제 확인 모달 */}
       {deleteTarget && (
