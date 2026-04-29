@@ -100,6 +100,7 @@ export default async function ProjectPage({
             projectId={p.id}
             initialTitle={p.title || '제목 없음'}
             initialBlocks={blocks}
+            initialStatus={p.status}
           />
         )}
       </div>

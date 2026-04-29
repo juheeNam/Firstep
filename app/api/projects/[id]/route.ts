@@ -1,8 +1,11 @@
 // 프로젝트 수정(PATCH) / 소프트 딜리트(DELETE)
-// PATCH  /api/projects/[id]  Body: { title: string }
+// PATCH  /api/projects/[id]  Body: { title?: string; status?: 'active' | 'completed' }
 // DELETE /api/projects/[id]
 
 import { createClient } from '@/lib/supabase/server';
+
+const VALID_STATUSES = ['active', 'completed'] as const;
+type ValidStatus = (typeof VALID_STATUSES)[number];
 
 export async function PATCH(
   request: Request,
@@ -13,24 +16,40 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: { title?: string };
+  let body: { title?: string; status?: string };
   try {
-    body = (await request.json()) as { title?: string };
+    body = (await request.json()) as { title?: string; status?: string };
   } catch {
     return Response.json({ error: 'invalid_body' }, { status: 400 });
   }
 
-  if (typeof body.title !== 'string' || body.title.trim().length === 0) {
-    return Response.json({ error: 'title_required' }, { status: 400 });
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+  if (body.title !== undefined) {
+    if (typeof body.title !== 'string' || body.title.trim().length === 0) {
+      return Response.json({ error: 'title_required' }, { status: 400 });
+    }
+    updates.title = body.title.trim();
+  }
+
+  if (body.status !== undefined) {
+    if (!VALID_STATUSES.includes(body.status as ValidStatus)) {
+      return Response.json({ error: 'invalid_status' }, { status: 400 });
+    }
+    updates.status = body.status;
+  }
+
+  if (Object.keys(updates).length === 1) {
+    return Response.json({ error: 'nothing_to_update' }, { status: 400 });
   }
 
   const { data, error } = await supabase
     .from('projects')
-    .update({ title: body.title.trim(), updated_at: new Date().toISOString() })
+    .update(updates)
     .eq('id', id)
     .eq('user_id', user.id)
     .is('deleted_at', null)
-    .select('id, title')
+    .select('id, title, status')
     .single();
 
   if (error || !data) {
