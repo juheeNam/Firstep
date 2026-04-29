@@ -141,6 +141,7 @@ export async function POST(
         // Zod 검증 실패 시 1회 자동 재시도 (PRD §4.4.2)
         // 이슈 4: 재시도 시 max_tokens 상향해 JSON 잘림 방지
         let draft: RoadmapDraft | null = null;
+        let totalTokensUsed = 0;
         for (let attempt = 0; attempt < 2 && !draft; attempt++) {
           if (abortSignal.aborted) return;
 
@@ -157,7 +158,15 @@ export async function POST(
           );
 
           let raw = '';
+          let inputTokens = 0;
+          let outputTokens = 0;
           for await (const event of claudeStream) {
+            if (event.type === 'message_start') {
+              inputTokens = event.message.usage.input_tokens;
+            }
+            if (event.type === 'message_delta' && event.usage) {
+              outputTokens = event.usage.output_tokens;
+            }
             if (
               event.type === 'content_block_delta' &&
               event.delta.type === 'text_delta'
@@ -166,6 +175,7 @@ export async function POST(
               send({ type: 'chunk', text: event.delta.text });
             }
           }
+          totalTokensUsed += inputTokens + outputTokens;
 
           if (abortSignal.aborted) return;
           draft = parseRoadmapDraft(raw);
@@ -273,6 +283,16 @@ export async function POST(
         if (sizeError) {
           // size_option 만 NULL 로 남는 케이스는 데이터 무결성에 큰 영향은 없으나 추적 가능하도록 로깅
           console.error('[roadmap] size_option update 실패', sizeError);
+        }
+
+        // 토큰 사용 기록 (fire-and-forget — 실패해도 생성 결과에 영향 없음)
+        if (totalTokensUsed > 0) {
+          void supabase.from('ai_usage').insert({
+            user_id:     user.id,
+            project_id:  projectId,
+            action:      'roadmap_generate',
+            tokens_delta: totalTokensUsed,
+          });
         }
 
         send({ type: 'done', projectId });

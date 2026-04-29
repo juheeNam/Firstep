@@ -4,6 +4,7 @@ import { signOut } from '@/app/login/actions';
 import { createClient } from '@/lib/supabase/server';
 import { SubmitButton } from '@/components/SubmitButton';
 import { ProjectList } from '@/components/ProjectList';
+import { DashboardStats } from '@/components/DashboardStats';
 import type { ProjectCardData } from '@/components/ProjectCard';
 import type { ProjectStatus } from '@/lib/types/projects';
 
@@ -76,6 +77,9 @@ export default async function DashboardPage() {
             </SubmitButton>
           </form>
         </header>
+
+        {/* 통계 위젯 (§4.6) — 항상 표시 */}
+        <DashboardStats />
 
         {projectList.length === 0 ? (
           // 빈 상태 (§4.8)
