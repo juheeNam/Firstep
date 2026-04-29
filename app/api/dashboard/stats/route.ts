@@ -7,12 +7,29 @@ import { createClient } from '@/lib/supabase/server';
 // 무료 플랜 토큰 한도 (베타 후 확정 예정)
 const FREE_TOKEN_LIMIT = 100_000;
 
+// Supabase N:1 조인은 런타임에 객체 또는 배열로 반환될 수 있음 — 양쪽 방어
+function getFirst<T>(val: T | T[] | null | undefined): T | null {
+  if (val == null) return null;
+  if (Array.isArray(val)) return val[0] ?? null;
+  return val;
+}
+
 // YYYY-MM-DD 형태로 날짜 반환 (sv-SE 로케일은 ISO 형식)
 function toLocalDateStr(date: Date, tz: string): string {
   try {
     return date.toLocaleDateString('sv-SE', { timeZone: tz });
   } catch {
     return date.toLocaleDateString('sv-SE', { timeZone: 'UTC' });
+  }
+}
+
+// 진입 시 한 번만 타임존 검증 — 잘못된 값은 UTC로 정규화
+function sanitizeTz(tz: string): string {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return tz;
+  } catch {
+    return 'UTC';
   }
 }
 
@@ -24,8 +41,8 @@ function calcStreak(completedDates: string[], tz: string): number {
   let streak = 0;
   const cursor = new Date();
 
-  // 오늘부터 하루씩 역산하며 연속일 계산
-  while (true) {
+  // 오늘부터 하루씩 역산하며 연속일 계산 (상한 10년)
+  while (streak < 3650) {
     const dayStr = toLocalDateStr(cursor, tz);
     if (!daySet.has(dayStr)) break;
     streak++;
@@ -46,22 +63,19 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const tz = searchParams.get('tz') ?? 'UTC';
+  const tz = sanitizeTz(searchParams.get('tz') ?? 'UTC');
 
-  // 완료된 투두의 completed_at 전체 조회 (스트릭·오늘 계산용)
+  // 완료된 투두의 completed_at 조회 (스트릭·오늘 계산용)
+  // RLS로 본인 데이터만 오므로 추가 user_id 필터 불필요
   const { data: completedTodos } = await supabase
     .from('todos')
-    .select('completed_at, blocks(projects(user_id))')
+    .select('completed_at')
     .eq('is_done', true)
     .not('completed_at', 'is', null);
 
-  // RLS로 본인 투두만 오지만, 혹시 모를 조인 필터도 적용
-  const completedDates = ((completedTodos ?? []) as {
-    completed_at: string;
-    blocks: { projects: { user_id: string }[] }[] ;
-  }[])
-    .filter(t => t.blocks?.[0]?.projects?.[0]?.user_id === user.id)
-    .map(t => t.completed_at as string);
+  const completedDates = (completedTodos ?? []).map(
+    t => t.completed_at as string,
+  );
 
   const todayStr = toLocalDateStr(new Date(), tz);
   const todayCount = completedDates.filter(
@@ -71,19 +85,21 @@ export async function GET(request: Request) {
   const streak = calcStreak(completedDates, tz);
 
   // 전체 프로젝트 투두 집계 (삭제된 프로젝트 제외)
-  const { data: blocks } = await supabase
+  // blocks → projects(deleted_at) 조인, N:1이므로 getFirst로 방어
+  const { data: blocksData } = await supabase
     .from('blocks')
-    .select('todos(is_done), projects(deleted_at)')
-    .not('projects', 'is', null);
+    .select('todos(is_done), projects(deleted_at)');
 
   type BlockRow = {
     todos: { is_done: boolean }[];
-    projects: { deleted_at: string | null }[];
+    projects: { deleted_at: string | null } | { deleted_at: string | null }[] | null;
   };
 
-  const activeBlocks = ((blocks ?? []) as BlockRow[]).filter(
-    b => b.projects?.[0]?.deleted_at === null,
-  );
+  const activeBlocks = ((blocksData ?? []) as BlockRow[]).filter(b => {
+    const proj = getFirst(b.projects);
+    return proj?.deleted_at === null;
+  });
+
   const allTodos = activeBlocks.flatMap(b => b.todos);
   const totalTodos = allTodos.length;
   const doneTodos = allTodos.filter(t => t.is_done).length;

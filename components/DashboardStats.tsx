@@ -121,7 +121,7 @@ export function DashboardStats() {
         </div>
         {isTokenLow && (
           <p className="text-xs font-medium text-amber-500 dark:text-amber-400">
-            ⚠️ 토큰이 20% 미만으로 남았어요
+            ⚠️ 토큰이 20% 이하로 남았어요
           </p>
         )}
       </div>
