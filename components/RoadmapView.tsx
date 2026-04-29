@@ -56,7 +56,7 @@ function SortableBlock({
         {...attributes}
         {...listeners}
         aria-label="블록 순서 변경"
-        className="absolute left-2 top-5 cursor-grab touch-none p-1 text-zinc-300 opacity-0 transition group-hover/block:opacity-100 active:cursor-grabbing dark:text-zinc-700"
+        className="absolute left-2 top-5 cursor-grab touch-none p-1 text-zinc-300 opacity-50 transition sm:opacity-0 sm:group-hover/block:opacity-100 active:cursor-grabbing dark:text-zinc-700"
       >
         <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor">
           <circle cx="3" cy="2.5" r="1.5" /><circle cx="7" cy="2.5" r="1.5" />
@@ -326,7 +326,7 @@ export function RoadmapView({ projectId, initialTitle, initialBlocks }: Props) {
                       {block.name}
                     </h2>
                   )}
-                  <div className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover/block:opacity-100">
+                  <div className="flex shrink-0 items-center gap-1 opacity-50 transition sm:opacity-0 sm:group-hover/block:opacity-100">
                     <button
                       onClick={() => { setBlockNameDraft(block.name); setEditingBlockId(block.id); }}
                       aria-label="블록 이름 편집"

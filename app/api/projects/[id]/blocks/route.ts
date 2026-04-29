@@ -88,14 +88,19 @@ export async function PATCH(
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const updates = body.orderedIds.map((blockId, idx) =>
+  // (project_id, seq) UNIQUE 제약 충돌 방지: 음수 임시값으로 먼저 설정 후 최종값 적용
+  const toNeg = body.orderedIds.map((blockId, idx) =>
+    supabase.from('blocks').update({ seq: -(idx + 1) }).eq('id', blockId).eq('project_id', projectId),
+  );
+  await Promise.all(toNeg);
+
+  const toFinal = body.orderedIds.map((blockId, idx) =>
     supabase
       .from('blocks')
       .update({ seq: idx + 1, updated_at: new Date().toISOString() })
       .eq('id', blockId)
       .eq('project_id', projectId),
   );
-
-  await Promise.all(updates);
+  await Promise.all(toFinal);
   return Response.json({ success: true });
 }
