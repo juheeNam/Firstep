@@ -59,6 +59,14 @@ export type IntentDataLevel3 = {
   followUpQAs: FollowUpQA[];
 };
 
+// 레벨 1 intent_data JSONB 구조 (페인포인트 발굴 + AI 후속 Q&A)
+export type IntentDataLevel1 = {
+  q1: string;
+  q2: string;
+  q3: string;
+  followUpQAs: FollowUpQA[];
+};
+
 // generateFollowUpQuestions 반환 타입
 export type FollowUpQuestionsResult =
   | { questions: string[] }

@@ -1,8 +1,13 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { Level1Flow } from '@/components/Level1Flow';
 
-export default async function Level1Page() {
+export default async function Level1Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -11,6 +16,8 @@ export default async function Level1Page() {
   if (!user) {
     redirect('/login');
   }
+
+  const { error } = await searchParams;
 
   return (
     <main className="flex flex-1 flex-col items-center bg-zinc-50 px-6 py-20 dark:bg-black">
@@ -34,17 +41,7 @@ export default async function Level1Page() {
           </div>
         </header>
 
-        <section className="flex flex-col items-center gap-6 rounded-2xl border border-dashed border-zinc-300 bg-white p-12 text-center dark:border-zinc-700 dark:bg-zinc-950">
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            AI 대화 기능이 곧 연결돼요. 지금은 레벨 선택까지만 동작합니다.
-          </p>
-          <Link
-            href="/projects/new"
-            className="rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
-          >
-            ← 다른 레벨 선택하기
-          </Link>
-        </section>
+        <Level1Flow errorCode={error} />
       </div>
     </main>
   );
